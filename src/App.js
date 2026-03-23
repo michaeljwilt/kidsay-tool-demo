@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './App.css';
 
 export default function KidSayDemo() {
   const [messages, setMessages] = useState([
@@ -18,19 +19,17 @@ export default function KidSayDemo() {
   };
 
   return (
-    <div style={{ 
+    <div className="outer-padding" style={{
       fontFamily: 'system-ui, sans-serif',
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a, #1e293b, #334155)',
-      padding: '24px'
+      background: 'linear-gradient(135deg, #0f172a, #1e293b, #334155)'
     }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         
         {/* Header */}
-        <div style={{ 
-          background: '#fff', 
+        <div className="header-card" style={{
+          background: '#fff',
           borderRadius: '20px',
-          padding: '28px 32px',
           marginBottom: '24px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
         }}>
@@ -62,14 +61,13 @@ export default function KidSayDemo() {
         </div>
 
         {/* Main Content */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px' }}>
+        <div className="main-grid">
           
           {/* Chat */}
-          <div style={{
+          <div className="chat-panel" style={{
             background: '#fff',
             borderRadius: '20px',
             padding: '24px',
-            height: '600px',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
@@ -104,7 +102,7 @@ export default function KidSayDemo() {
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px', fontWeight: '600' }}>
                   Try asking:
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div className="suggested-grid">
                   {[
                     'What are the top toys this quarter?',
                     'Show me healthy snack trends',
@@ -235,9 +233,9 @@ export default function KidSayDemo() {
         }}>
           <button
             onClick={() => setExpanded(!expanded)}
+            className="future-work-toggle"
             style={{
               width: '100%',
-              padding: '24px 32px',
               background: 'transparent',
               border: 'none',
               display: 'flex',
@@ -266,7 +264,7 @@ export default function KidSayDemo() {
           </button>
 
           {expanded && (
-            <div style={{ padding: '0 32px 32px' }}>
+            <div className="future-work-body">
               <div style={{ padding: '16px 20px', background: '#fffbeb', borderRadius: '12px', marginBottom: '20px', borderLeft: '4px solid #f59e0b' }}>
                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', marginBottom: '4px' }}>
                   📋 Based on Phase 4 Validation

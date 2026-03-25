@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend
+  ResponsiveContainer, LineChart, Line, Legend,
+  AreaChart, Area
 } from 'recharts';
 
 const RESPONSES = {
@@ -122,6 +123,31 @@ function ChartBlock({ chart, darkMode }) {
             <Tooltip contentStyle={tooltipStyle} />
             <Line type="monotone" dataKey={chart.dataKey} stroke="#00D4BB" strokeWidth={2} dot={{ fill: '#00D4BB', r: 4 }} />
           </LineChart>
+        ) : chart.type === 'area' ? (
+          <AreaChart data={chart.data} margin={margin}>
+            <defs>
+              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#00D4BB" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#00D4BB" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+            <XAxis dataKey="name" {...axisProps} />
+            <YAxis {...axisProps} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Area type="monotone" dataKey={chart.dataKey} stroke="#00D4BB" strokeWidth={2} fill="url(#areaGradient)" dot={{ fill: '#00D4BB', r: 4 }} />
+          </AreaChart>
+        ) : chart.type === 'stacked-bar' ? (
+          <BarChart data={chart.data} margin={margin}>
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+            <XAxis dataKey="name" {...axisProps} />
+            <YAxis {...axisProps} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend wrapperStyle={{ fontSize: '11px', color: textColor }} />
+            {chart.bars.map(b => (
+              <Bar key={b.key} dataKey={b.key} fill={b.color} stackId="stack" radius={[0, 0, 0, 0]} />
+            ))}
+          </BarChart>
         ) : (
           <BarChart data={chart.data} margin={margin}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />

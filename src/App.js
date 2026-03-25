@@ -148,7 +148,15 @@ export default function KidSayDemo() {
   const [darkMode, setDarkMode] = useState(true);
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [streamingPos, setStreamingPos] = useState(0);
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Streaming effect — advances one character at a time
   useEffect(() => {
@@ -247,17 +255,17 @@ export default function KidSayDemo() {
   const tr = 'background 0.3s, color 0.3s, border-color 0.3s';
 
   return (
-    <div className="outer-padding" style={{ fontFamily: 'system-ui, sans-serif', minHeight: '100vh', background: t.outerBg, transition: tr }}>
+    <div className={`outer-padding${isMobile ? ' mobile-layout' : ''}`} style={{ fontFamily: 'system-ui, sans-serif', minHeight: '100vh', background: t.outerBg, transition: tr }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
 
         {/* Header */}
         <div className="header-card" style={{ background: t.card, borderRadius: '20px', marginBottom: '24px', boxShadow: t.shadow, transition: tr }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #00D4BB, #00E5CC)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>🎯</div>
+              <div style={{ width: isMobile ? '36px' : '48px', height: isMobile ? '36px' : '48px', background: 'linear-gradient(135deg, #00D4BB, #00E5CC)', borderRadius: isMobile ? '10px' : '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? '18px' : '24px' }}>🎯</div>
               <div>
-                <h1 style={{ fontSize: '26px', fontWeight: '700', background: 'linear-gradient(135deg, #00D4BB, #00E5CC)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>KidSay Analytics AI</h1>
-                <p style={{ fontSize: '13px', color: t.textSub, margin: '2px 0 0', transition: tr }}>25 years of survey data • Powered by GPT-5 Nano</p>
+                <h1 style={{ fontSize: isMobile ? '18px' : '26px', fontWeight: '700', background: 'linear-gradient(135deg, #00D4BB, #00E5CC)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>KidSay Analytics AI</h1>
+                {!isMobile && <p style={{ fontSize: '13px', color: t.textSub, margin: '2px 0 0', transition: tr }}>25 years of survey data • Powered by GPT-5 Nano</p>}
               </div>
             </div>
             <button
@@ -269,6 +277,18 @@ export default function KidSayDemo() {
             </button>
           </div>
         </div>
+
+        {/* Stats Bar (mobile only) */}
+        {isMobile && (
+          <div className="mobile-stats-bar"
+            onClick={() => setStatsOpen(true)}
+            style={{ background: t.card, borderBottom: `1px solid ${t.inputBorder}`, transition: tr }}>
+            <span style={{ color: t.textSub }}>📊 104 Quarters</span>
+            <span style={{ color: t.textSub }}>🏷️ 2,847 Products</span>
+            <span style={{ color: t.textSub }}>📋 1.2M+ Responses</span>
+            <span style={{ marginLeft: 'auto', color: t.textSub, fontSize: '10px' }}>▼</span>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="main-grid">
@@ -326,7 +346,7 @@ export default function KidSayDemo() {
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleSend()}
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
                 placeholder="Ask about trends, preferences, or patterns..."
                 style={{ flex: 1, padding: '14px', border: `2px solid ${t.inputBorder}`, borderRadius: '12px', fontSize: '14px', outline: 'none', background: t.inputBg, color: t.inputText, transition: tr }}
               />
@@ -344,8 +364,8 @@ export default function KidSayDemo() {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Sidebar (desktop only) */}
+          {!isMobile && <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ background: t.card, borderRadius: '16px', padding: '20px', boxShadow: t.shadow, transition: tr }}>
               <div style={{ fontSize: '13px', fontWeight: '700', color: t.textSub, marginBottom: '14px', transition: tr }}>QUICK STATS</div>
               <div style={{ fontSize: '13px', color: t.textSub, transition: tr }}>
@@ -371,10 +391,11 @@ export default function KidSayDemo() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
         </div>
 
-        {/* Future Work */}
+        {/* Future Work (desktop only) */}
+        {!isMobile && (
         <div style={{ background: t.card, borderRadius: '20px', marginTop: '24px', boxShadow: t.shadow, overflow: 'hidden', transition: tr }}>
           <button
             onClick={() => setExpanded(!expanded)}
@@ -424,6 +445,84 @@ export default function KidSayDemo() {
             </div>
           )}
         </div>
+        )}
+
+        {/* Stats Overlay (mobile only) */}
+        {isMobile && statsOpen && (
+          <>
+            <div className="stats-overlay-backdrop" onClick={() => setStatsOpen(false)} />
+            <div className="stats-overlay" style={{ background: t.card, boxShadow: '0 -4px 30px rgba(0,0,0,0.3)', transition: tr }}>
+              <div className="stats-overlay-close">
+                <span style={{ fontSize: '16px', fontWeight: '700', color: t.text }}>Dashboard</span>
+                <button onClick={() => setStatsOpen(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '20px', color: t.textSub, cursor: 'pointer', padding: '4px 8px' }}>✕</button>
+              </div>
+
+              {/* Quick Stats */}
+              <div style={{ background: t.msgBg, borderRadius: '12px', padding: '16px', marginBottom: '12px', transition: tr }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: t.textSub, marginBottom: '12px', transition: tr }}>QUICK STATS</div>
+                <div style={{ fontSize: '13px', color: t.textSub, transition: tr }}>
+                  {[['Data Range', 'Q1 2000 - Q4 2025'], ['Total Quarters', '104'], ['Products Tracked', '2,847'], ['Total Responses', '1.2M+']].map(([label, value], i, arr) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: i < arr.length - 1 ? '10px' : 0 }}>
+                      <span>{label}</span>
+                      <strong style={{ color: t.text, transition: tr }}>{value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Insights */}
+              <div style={{ background: t.msgBg, borderRadius: '12px', padding: '16px', marginBottom: '12px', transition: tr }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: t.textSub, marginBottom: '12px', transition: tr }}>RECENT INSIGHTS</div>
+                {[
+                  { s: t.warn, icon: '⚠️', title: 'Anomaly Detected', body: 'LEGO saw unexpected 35% drop in West Coast' },
+                  { s: t.up,   icon: '📈', title: 'Trending Up',       body: 'Healthy snacks +15% YoY' },
+                  { s: t.new,  icon: '🔔', title: 'New Pattern',       body: 'Gender gap narrowing for LEGO' },
+                ].map(({ s, icon, title, body }, i, arr) => (
+                  <div key={title} style={{ padding: '12px', background: s.bg, borderRadius: '10px', borderLeft: `3px solid ${s.border}`, marginBottom: i < arr.length - 1 ? '10px' : 0, transition: tr }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: s.title, transition: tr }}>{icon} {title}</div>
+                    <div style={{ fontSize: '11px', color: s.text, transition: tr }}>{body}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Future Work */}
+              <div style={{ background: t.msgBg, borderRadius: '12px', overflow: 'hidden', transition: tr }}>
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  style={{ width: '100%', padding: '16px', background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '18px' }}>🚀</span>
+                    <span style={{ fontSize: '14px', fontWeight: '700', color: t.text, transition: tr }}>Future Work</span>
+                  </div>
+                  <span style={{ fontSize: '16px', color: t.textSub }}>{expanded ? '▲' : '▼'}</span>
+                </button>
+                {expanded && (
+                  <div style={{ padding: '0 16px 16px' }}>
+                    {[
+                      { icon: '🔔', title: 'Automated Anomaly Detection', cost: '+$110-170/mo' },
+                      { icon: '📈', title: 'Predictive Forecasting', cost: 'Included' },
+                      { icon: '🎯', title: 'Segment Comparison Tool', cost: 'Included' },
+                      { icon: '📊', title: 'Natural Language Charts', cost: 'Included' },
+                      { icon: '💬', title: 'Slack & Teams Notifications', cost: 'Included' },
+                      { icon: '📧', title: 'Automated Reports & Alerts', cost: 'Included' },
+                    ].map((f, i) => {
+                      const cs = f.cost.includes('+') ? t.costExtra : t.costFree;
+                      return (
+                        <div key={i} style={{ padding: '10px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: i < 5 ? `1px solid ${t.inputBorder}` : 'none' }}>
+                          <span style={{ fontSize: '16px' }}>{f.icon}</span>
+                          <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', color: t.text, transition: tr }}>{f.title}</span>
+                          <span style={{ fontSize: '9px', fontWeight: '600', padding: '2px 6px', borderRadius: '4px', background: cs.bg, color: cs.color }}>{f.cost}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </div>

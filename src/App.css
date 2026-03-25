@@ -37,23 +37,77 @@
 
 @media (max-width: 768px) {
   .outer-padding {
-    padding: 12px;
+    padding: 0;
+  }
+
+  .outer-padding.mobile-layout {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .header-card {
-    padding: 16px;
+    padding: 10px 12px;
+    border-radius: 0;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .mobile-stats-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
   }
 
   .main-grid {
     grid-template-columns: 1fr;
+    flex: 1;
+    min-height: 0;
   }
 
   .chat-panel {
-    height: 450px;
+    height: auto;
+    flex: 1;
+    min-height: 0;
+    border-radius: 0;
+    padding: 12px;
   }
 
   .suggested-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stats-overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+  }
+
+  .stats-overlay {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 75vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    z-index: 101;
+    padding: 20px;
+  }
+
+  .stats-overlay-close {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
   }
 
   .future-work-toggle {

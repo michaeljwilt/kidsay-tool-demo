@@ -5,85 +5,8 @@ import {
   ResponsiveContainer, LineChart, Line, Legend,
   AreaChart, Area
 } from 'recharts';
-
-const RESPONSES = {
-  toys: {
-    text: "Based on 25 years of data, here are the top toys for Q4 2025. LEGO leads with 68% popularity, up 12% from last quarter!",
-    chart: {
-      type: 'bar',
-      title: 'Top Toys Q4 2025 — Popularity %',
-      dataKey: 'value',
-      data: [
-        { name: 'LEGO', value: 68 },
-        { name: 'Hot Wheels', value: 62 },
-        { name: 'Squishmallows', value: 59 },
-        { name: 'Barbie', value: 54 },
-        { name: 'Nerf', value: 48 },
-      ]
-    }
-  },
-  snacks: {
-    text: "Healthy snacks are trending strongly with +15% YoY growth. Here's the popularity trend over the last 4 quarters:",
-    chart: {
-      type: 'line',
-      title: 'Healthy Snack Popularity (% of respondents)',
-      dataKey: 'value',
-      data: [
-        { name: 'Q1 2025', value: 41 },
-        { name: 'Q2 2025', value: 45 },
-        { name: 'Q3 2025', value: 49 },
-        { name: 'Q4 2025', value: 56 },
-      ]
-    }
-  },
-  gender: {
-    text: "The gender gap for LEGO has been narrowing significantly. Girls' interest has grown from 42% to 65% over three years, while boys' remained relatively stable.",
-    chart: {
-      type: 'grouped-bar',
-      title: 'LEGO Popularity by Gender',
-      bars: [
-        { key: 'boys', color: '#60a5fa' },
-        { key: 'girls', color: '#f472b6' },
-      ],
-      data: [
-        { name: 'Q4 2022', boys: 78, girls: 42 },
-        { name: 'Q4 2023', boys: 75, girls: 51 },
-        { name: 'Q4 2024', boys: 72, girls: 59 },
-        { name: 'Q4 2025', boys: 70, girls: 65 },
-      ]
-    }
-  },
-  quarter: {
-    text: "Comparing Q3 vs Q4 2025 across top products — LEGO had the biggest jump (+12%), while Barbie and Nerf both dipped slightly.",
-    chart: {
-      type: 'grouped-bar',
-      title: 'Q3 vs Q4 2025 Popularity %',
-      bars: [
-        { key: 'Q3 2025', color: '#94a3b8' },
-        { key: 'Q4 2025', color: '#00D4BB' },
-      ],
-      data: [
-        { name: 'LEGO', 'Q3 2025': 56, 'Q4 2025': 68 },
-        { name: 'Hot Wheels', 'Q3 2025': 60, 'Q4 2025': 62 },
-        { name: 'Squishmallows', 'Q3 2025': 55, 'Q4 2025': 59 },
-        { name: 'Barbie', 'Q3 2025': 57, 'Q4 2025': 54 },
-        { name: 'Nerf', 'Q3 2025': 52, 'Q4 2025': 48 },
-      ]
-    }
-  },
-  default: {
-    text: "Based on 25 years of data, the top toys for Q4 2025 are LEGO (68% popularity), Hot Wheels (62%), and Squishmallows (59%). LEGO increased 12% from last quarter!",
-  }
-};
-
-function getResponse(input) {
-  const q = input.toLowerCase();
-  if (q.includes('toy') || q.includes('popular')) return RESPONSES.toys;
-  if (q.includes('snack') || q.includes('food') || q.includes('healthy')) return RESPONSES.snacks;
-  if (q.includes('gender') || q.includes('boy') || q.includes('girl')) return RESPONSES.gender;
-  if (q.includes('quarter') || q.includes('changed') || q.includes('last')) return RESPONSES.quarter;
-  return RESPONSES.default;
-}
+import { RESPONSES, DEFAULT_RESPONSE, getResponseById } from './responses';
+import matchResponse from './matchResponse';
 
 function ChartBlock({ chart, darkMode }) {
   const textColor = darkMode ? '#94a3b8' : '#64748b';
@@ -205,11 +128,12 @@ export default function KidSayDemo() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = () => {
-    if (!input.trim() || streamingIndex !== null) return;
-    const response = getResponse(input);
-    const userMsg = { role: 'user', text: input, displayText: input, streaming: false };
-    const assistantMsg = { role: 'assistant', text: response.text, chart: response.chart, displayText: '', streaming: true };
+  const handleSend = (text) => {
+    const msgText = text || input;
+    if (!msgText.trim() || streamingIndex !== null) return;
+    const response = matchResponse(msgText, RESPONSES) || DEFAULT_RESPONSE;
+    const userMsg = { role: 'user', text: msgText, displayText: msgText, streaming: false };
+    const assistantMsg = { role: 'assistant', text: response.text, chart: response.chart, followUps: response.followUps, displayText: '', streaming: true };
     setMessages(prev => {
       const updated = [...prev, userMsg, assistantMsg];
       setStreamingIndex(updated.length - 1);
@@ -217,6 +141,18 @@ export default function KidSayDemo() {
       return updated;
     });
     setInput('');
+  };
+
+  const handleFollowUp = (response) => {
+    if (streamingIndex !== null) return;
+    const userMsg = { role: 'user', text: response.label, displayText: response.label, streaming: false };
+    const assistantMsg = { role: 'assistant', text: response.text, chart: response.chart, followUps: response.followUps, displayText: '', streaming: true };
+    setMessages(prev => {
+      const updated = [...prev, userMsg, assistantMsg];
+      setStreamingIndex(updated.length - 1);
+      setStreamingPos(0);
+      return updated;
+    });
   };
 
   // Theme tokens
@@ -317,6 +253,34 @@ export default function KidSayDemo() {
                     {!msg.streaming && msg.chart && (
                       <ChartBlock chart={msg.chart} darkMode={darkMode} />
                     )}
+                    {!msg.streaming && msg.followUps && msg.followUps.length > 0 && (
+                      <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {msg.followUps.map(id => {
+                          const followUp = getResponseById(id);
+                          if (!followUp) return null;
+                          return (
+                            <button
+                              key={id}
+                              onClick={() => handleFollowUp(followUp)}
+                              style={{
+                                padding: '6px 12px',
+                                background: darkMode ? 'rgba(0,212,187,0.1)' : 'rgba(0,212,187,0.08)',
+                                border: `1px solid ${darkMode ? 'rgba(0,212,187,0.3)' : 'rgba(0,212,187,0.2)'}`,
+                                borderRadius: '8px',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                color: '#00D4BB',
+                                transition: tr
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = darkMode ? 'rgba(0,212,187,0.2)' : 'rgba(0,212,187,0.15)'}
+                              onMouseLeave={e => e.currentTarget.style.background = darkMode ? 'rgba(0,212,187,0.1)' : 'rgba(0,212,187,0.08)'}
+                            >
+                              {followUp.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -329,13 +293,14 @@ export default function KidSayDemo() {
                 <div className="suggested-grid">
                   {[
                     'What are the top toys this quarter?',
-                    'Show me healthy snack trends',
-                    'Compare boys vs girls toy preferences',
-                    'What changed from last quarter?'
+                    'How have toy trends changed over 25 years?',
+                    "Tell me about LEGO's history",
+                    'How do regions compare?',
+                    'What spikes during the holidays?'
                   ].map((question, i) => (
                     <button
                       key={i}
-                      onClick={() => setInput(question)}
+                      onClick={() => handleSend(question)}
                       style={{ padding: '10px 14px', background: t.suggestBg, border: `1px solid ${t.suggestBorder}`, borderRadius: '10px', fontSize: '12px', cursor: 'pointer', textAlign: 'left', color: t.suggestText, transition: tr }}
                       onMouseEnter={e => e.currentTarget.style.borderColor = '#00E5CC'}
                       onMouseLeave={e => e.currentTarget.style.borderColor = t.suggestBorder}

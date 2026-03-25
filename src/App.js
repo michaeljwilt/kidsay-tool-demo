@@ -8,7 +8,10 @@ import {
 import { RESPONSES, DEFAULT_RESPONSE, getResponseById } from './responses';
 import matchResponse from './matchResponse';
 
+let chartIdCounter = 0;
+
 function ChartBlock({ chart, darkMode }) {
+  const [gradientId] = useState(() => `areaGradient-${++chartIdCounter}`);
   const textColor = darkMode ? '#94a3b8' : '#64748b';
   const gridColor = darkMode ? '#334155' : '#e2e8f0';
   const tooltipStyle = {
@@ -49,7 +52,7 @@ function ChartBlock({ chart, darkMode }) {
         ) : chart.type === 'area' ? (
           <AreaChart data={chart.data} margin={margin}>
             <defs>
-              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#00D4BB" stopOpacity={0.3} />
                 <stop offset="95%" stopColor="#00D4BB" stopOpacity={0} />
               </linearGradient>
@@ -58,7 +61,7 @@ function ChartBlock({ chart, darkMode }) {
             <XAxis dataKey="name" {...axisProps} />
             <YAxis {...axisProps} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Area type="monotone" dataKey={chart.dataKey} stroke="#00D4BB" strokeWidth={2} fill="url(#areaGradient)" dot={{ fill: '#00D4BB', r: 4 }} />
+            <Area type="monotone" dataKey={chart.dataKey} stroke="#00D4BB" strokeWidth={2} fill={`url(#${gradientId})`} dot={{ fill: '#00D4BB', r: 4 }} />
           </AreaChart>
         ) : chart.type === 'stacked-bar' ? (
           <BarChart data={chart.data} margin={margin}>
@@ -317,12 +320,12 @@ export default function KidSayDemo() {
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleSend()}
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
                 placeholder="Ask about trends, preferences, or patterns..."
                 style={{ flex: 1, padding: '14px', border: `2px solid ${t.inputBorder}`, borderRadius: '12px', fontSize: '14px', outline: 'none', background: t.inputBg, color: t.inputText, transition: tr }}
               />
               <button
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={streamingIndex !== null}
                 style={{
                   padding: '14px 24px',

@@ -57,7 +57,7 @@ Each response is a structured object in `responses.js`:
 1. Normalize user input to lowercase.
 2. For each response, sum the weights of all keywords found in the input.
 3. If 3+ keywords match, multiply score by 1.5 (rewards specificity).
-4. Return the highest-scoring response, or the default if no response scores above 0.
+4. Return the highest-scoring response. Ties broken by declaration order in `responses.js` (first match wins). Return default if no response scores above 0.
 
 Example:
 ```
@@ -88,7 +88,7 @@ Exported as a single function: `matchResponse(input) → response object`.
 
 | ID | Trigger Examples | Chart Type |
 |----|-----------------|------------|
-| `decade-toys` | "Compare toy trends across decades" | grouped bar |
+| `decade-toys` | "Compare toy trends across decades" | grouped-bar |
 | `decade-snacks` | "How have snack preferences evolved?" | area |
 | `decade-screen-time` | "Screen time impact on toy preferences" | area |
 | `decade-brand-dominance` | "Which brands dominated each era?" | stacked bar |
@@ -110,17 +110,17 @@ Exported as a single function: `matchResponse(input) → response object`.
 
 | ID | Trigger Examples | Chart Type |
 |----|-----------------|------------|
-| `regional-toys` | "How do regions compare for toys?" | grouped bar |
-| `regional-snacks` | "Snack preferences by region" | grouped bar |
-| `lego-regional` | "LEGO performance by region" | grouped bar |
+| `regional-toys` | "How do regions compare for toys?" | grouped-bar |
+| `regional-snacks` | "Snack preferences by region" | grouped-bar |
+| `lego-regional` | "LEGO performance by region" | grouped-bar |
 | `west-coast-anomaly` | "What happened on the West Coast?" | line |
 
 ### 5. Age Group Analysis (4 responses)
 
 | ID | Trigger Examples | Chart Type |
 |----|-----------------|------------|
-| `age-toys` | "What do different age groups like?" | grouped bar |
-| `age-snacks` | "Snack preferences by age" | grouped bar |
+| `age-toys` | "What do different age groups like?" | grouped-bar |
+| `age-snacks` | "Snack preferences by age" | grouped-bar |
 | `age-screen-influence` | "How does screen time vary by age?" | stacked bar |
 | `age-trends-over-time` | "Have age preferences shifted?" | area |
 
@@ -128,7 +128,7 @@ Exported as a single function: `matchResponse(input) → response object`.
 
 | ID | Trigger Examples | Chart Type |
 |----|-----------------|------------|
-| `holiday-spike` | "What spikes during holidays?" | grouped bar |
+| `holiday-spike` | "What spikes during holidays?" | grouped-bar |
 | `seasonal-toys` | "Seasonal toy patterns" | line |
 | `back-to-school` | "Back to school trends" | bar |
 | `q4-vs-rest` | "How big is the Q4 holiday effect?" | stacked bar |
@@ -139,8 +139,8 @@ Exported as a single function: `matchResponse(input) → response object`.
 |----|-------------|------------|
 | `top-toys-current` | `toys` | bar |
 | `snack-trend-current` | `snacks` | line |
-| `gender-current` | `gender` | grouped bar |
-| `quarter-comparison` | `quarter` | grouped bar |
+| `gender-current` | `gender` | grouped-bar |
+| `quarter-comparison` | `quarter` | grouped-bar |
 
 ### Default Fallback (1)
 

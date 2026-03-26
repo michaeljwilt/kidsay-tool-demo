@@ -149,6 +149,7 @@ export default function KidSayDemo() {
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [streamingPos, setStreamingPos] = useState(0);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   // Streaming effect — advances one character at a time
   useEffect(() => {
@@ -174,9 +175,11 @@ export default function KidSayDemo() {
     return () => clearTimeout(timer);
   }, [streamingIndex, streamingPos, messages]);
 
-  // Auto-scroll to latest message
+  // Auto-scroll to latest message within the chat panel only
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = () => {
@@ -275,7 +278,7 @@ export default function KidSayDemo() {
 
           {/* Chat */}
           <div className="chat-panel" style={{ background: t.card, borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', boxShadow: t.shadow, transition: tr }}>
-            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+            <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
               {messages.map((msg, i) => (
                 <div key={i} style={{ marginBottom: '16px', display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                   <div style={{

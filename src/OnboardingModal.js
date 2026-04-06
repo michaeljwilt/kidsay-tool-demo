@@ -5,6 +5,7 @@ const STEPS = [
   { id: 'focus',    title: 'What to Track',      icon: '🎯' },
   { id: 'audience', title: 'Who to Watch',       icon: '👥' },
   { id: 'alerts',   title: 'Alert Preferences',  icon: '🔔' },
+  { id: 'extra',    title: 'Anything Else',       icon: '💬' },
 ];
 
 const ROLES = ['Buyer', 'Brand Manager', 'Market Researcher', 'Product Development', 'Executive', 'Other'];
@@ -50,7 +51,7 @@ export default function OnboardingModal({ onComplete, onClose, existing, darkMod
     name: '', company: '', role: '',
     categories: [], interests: [],
     ageGroups: [], regions: [], gender: 'all',
-    alerts: [],
+    alerts: [], additionalInfo: '',
   });
 
   const update = (key, val) => setConfig(prev => ({ ...prev, [key]: val }));
@@ -207,6 +208,23 @@ export default function OnboardingModal({ onComplete, onClose, existing, darkMod
         );
       })}
     </div>,
+
+    // Step 4 — Anything Else
+    <div key="extra" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <label style={labelStyle}>Additional Context <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+      <textarea
+        style={{
+          ...inputStyle,
+          minHeight: '160px',
+          resize: 'vertical',
+          fontFamily: 'inherit',
+          lineHeight: '1.5',
+        }}
+        placeholder="Any specific products, competitors, or questions you'd like your agent to prioritize? Any context that would help tailor your experience?"
+        value={config.additionalInfo}
+        onChange={e => update('additionalInfo', e.target.value)}
+      />
+    </div>,
   ];
 
   return (
@@ -272,6 +290,7 @@ export default function OnboardingModal({ onComplete, onClose, existing, darkMod
               {step === 1 && "Choose the product categories your agent should focus on."}
               {step === 2 && "Define the audience segments most relevant to your work."}
               {step === 3 && "Select the types of signals your agent should surface automatically."}
+              {step === 4 && "Share anything else that would help your agent serve you better."}
             </p>
           </div>
 

@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { RESPONSES, DEFAULT_RESPONSE, getResponseById } from './responses';
 import matchResponse from './matchResponse';
+import OnboardingModal from './OnboardingModal';
 
 let chartIdCounter = 0;
 
@@ -102,6 +103,8 @@ export default function KidSayDemo() {
   const [streamingPos, setStreamingPos] = useState(0);
   const [statsOpen, setStatsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [agentConfig, setAgentConfig] = useState(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -164,6 +167,16 @@ export default function KidSayDemo() {
       setStreamingPos(0);
       return updated;
     });
+  };
+
+  const handleOnboardingComplete = (config) => {
+    setAgentConfig(config);
+    setOnboardingOpen(false);
+    const cats = config.categories.join(' & ').toLowerCase();
+    const ages = config.ageGroups.length > 0 ? config.ageGroups.map(a => a.split(' ')[0]).join(', ') : 'all ages';
+    const regions = config.regions.includes('National') ? 'nationally' : config.regions.join(', ');
+    const greeting = `Hi ${config.name}! Your agent is configured. I'll focus on ${cats} trends for ${ages} ${regions}. I'll proactively flag ${config.alerts.length > 0 ? config.alerts.join(', ').replace(/_/g, ' ') : 'key insights'} as they emerge. What would you like to explore first?`;
+    setMessages([{ role: 'assistant', text: greeting, displayText: greeting, streaming: false }]);
   };
 
   // Theme tokens
@@ -233,13 +246,27 @@ export default function KidSayDemo() {
                 {!isMobile && <p style={{ fontSize: '13px', color: t.textSub, margin: '2px 0 0', transition: tr }}>25 years of survey data • Powered by GPT-5 Nano</p>}
               </div>
             </div>
-            <button
-              onClick={() => setDarkMode(d => !d)}
-              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              style={{ padding: '10px 16px', background: t.toggleBg, color: t.toggleText, border: 'none', borderRadius: '12px', fontSize: '18px', cursor: 'pointer', transition: tr, lineHeight: 1 }}
-            >
-              {darkMode ? '☀️' : '🌙'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                onClick={() => setOnboardingOpen(true)}
+                style={{
+                  padding: '10px 16px', border: agentConfig ? 'none' : `1.5px solid #00D4BB`,
+                  borderRadius: '12px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                  background: agentConfig ? 'linear-gradient(135deg,#00D4BB,#00E5CC)' : 'transparent',
+                  color: agentConfig ? '#fff' : '#00D4BB',
+                  transition: tr, whiteSpace: 'nowrap',
+                }}
+              >
+                {agentConfig ? `⚙️ ${agentConfig.name}'s Agent` : '✨ Set Up Agent'}
+              </button>
+              <button
+                onClick={() => setDarkMode(d => !d)}
+                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                style={{ padding: '10px 16px', background: t.toggleBg, color: t.toggleText, border: 'none', borderRadius: '12px', fontSize: '18px', cursor: 'pointer', transition: tr, lineHeight: 1 }}
+              >
+                {darkMode ? '☀️' : '🌙'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -360,6 +387,49 @@ export default function KidSayDemo() {
 
           {/* Sidebar (desktop only) */}
           {!isMobile && <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* Agent Profile Card */}
+            {agentConfig ? (
+              <div style={{ background: t.card, borderRadius: '16px', padding: '20px', boxShadow: t.shadow, transition: tr, border: '1.5px solid rgba(0,212,187,0.3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: t.textSub }}>YOUR AGENT</div>
+                  <button onClick={() => setOnboardingOpen(true)} style={{ fontSize: '11px', color: '#00D4BB', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '600' }}>Edit</button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,#00D4BB,#00E5CC)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🤖</div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: t.text }}>{agentConfig.name}</div>
+                    <div style={{ fontSize: '12px', color: t.textSub }}>{agentConfig.role} · {agentConfig.company}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: t.textSub, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div><span style={{ color: t.text, fontWeight: '600' }}>Tracking: </span>{agentConfig.categories.join(' & ')}</div>
+                  {agentConfig.interests.length > 0 && <div><span style={{ color: t.text, fontWeight: '600' }}>Focus: </span>{agentConfig.interests.slice(0, 3).join(', ')}{agentConfig.interests.length > 3 ? ` +${agentConfig.interests.length - 3}` : ''}</div>}
+                  <div><span style={{ color: t.text, fontWeight: '600' }}>Ages: </span>{agentConfig.ageGroups.map(a => a.split(' ')[0]).join(', ')}</div>
+                  <div><span style={{ color: t.text, fontWeight: '600' }}>Regions: </span>{agentConfig.regions.join(', ')}</div>
+                  {agentConfig.alerts.length > 0 && (
+                    <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {agentConfig.alerts.map(a => (
+                        <span key={a} style={{ padding: '2px 8px', borderRadius: '10px', background: 'rgba(0,212,187,0.12)', color: '#00D4BB', fontSize: '10px', fontWeight: '600' }}>
+                          {a === 'qoq' ? 'QoQ' : a.charAt(0).toUpperCase() + a.slice(1)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => setOnboardingOpen(true)}
+                style={{ background: t.card, borderRadius: '16px', padding: '20px', boxShadow: t.shadow, transition: tr, border: `1.5px dashed ${t.inputBorder}`, cursor: 'pointer', textAlign: 'center' }}
+              >
+                <div style={{ fontSize: '28px', marginBottom: '8px' }}>🤖</div>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: t.text, marginBottom: '4px' }}>No agent configured</div>
+                <div style={{ fontSize: '12px', color: t.textSub, marginBottom: '12px' }}>Set up your personalized agent to get tailored insights.</div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#00D4BB' }}>✨ Set Up Agent →</div>
+              </div>
+            )}
+
             <div style={{ background: t.card, borderRadius: '16px', padding: '20px', boxShadow: t.shadow, transition: tr }}>
               <div style={{ fontSize: '13px', fontWeight: '700', color: t.textSub, marginBottom: '14px', transition: tr }}>QUICK STATS</div>
               <div style={{ fontSize: '13px', color: t.textSub, transition: tr }}>
@@ -519,6 +589,16 @@ export default function KidSayDemo() {
         )}
 
       </div>
+
+      {onboardingOpen && (
+        <OnboardingModal
+          onComplete={handleOnboardingComplete}
+          onClose={() => setOnboardingOpen(false)}
+          existing={agentConfig}
+          darkMode={darkMode}
+          t={t}
+        />
+      )}
     </div>
   );
 }

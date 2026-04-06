@@ -201,6 +201,7 @@ function KidSayDemo() {
   const [activities, setActivities] = useState([]);
   const [agentActive, setAgentActive] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -261,9 +262,11 @@ function KidSayDemo() {
     return () => clearTimeout(timer);
   }, [streamingIndex, streamingPos, messages]);
 
-  // Auto-scroll to latest message
+  // Auto-scroll to latest message within the chat panel only
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = (text) => {
@@ -643,7 +646,7 @@ function KidSayDemo() {
 
         {/* Chat (desktop: inline, mobile: hidden — shown in overlay) */}
         {!isMobile && <div className="chat-panel" style={{ background: t.card, borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', boxShadow: t.shadow, transition: tr }}>
-            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+            <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
               {messages.map((msg, i) => (
                 <div key={i} style={{ marginBottom: '16px', display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                   <div style={{
@@ -690,7 +693,7 @@ function KidSayDemo() {
                   </div>
                 </div>
               ))}
-              <div ref={messagesEndRef} />
+
             </div>
 
             {messages.length === 1 && (

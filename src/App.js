@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import './App.css';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -14,12 +14,71 @@ import {
   getPersonalizedSuggestions,
 } from './agentPersonalization';
 
+const DEMO_PASSWORD = 'kidsay2026';
+
+function PasswordGate({ children }) {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem('kidsay_auth') === 'true');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(false);
+
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    if (password === DEMO_PASSWORD) {
+      sessionStorage.setItem('kidsay_auth', 'true');
+      setAuthed(true);
+    } else {
+      setError(true);
+      setPassword('');
+    }
+  }, [password]);
+
+  if (authed) return children;
+
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg, #0a0f1a 0%, #1a1f2e 100%)',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    }}>
+      <form onSubmit={handleSubmit} style={{
+        background: '#1e2433', borderRadius: '20px', padding: '40px',
+        width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔒</div>
+        <h2 style={{ color: '#fff', margin: '0 0 6px', fontSize: '20px', fontWeight: 700 }}>KidSay Analytics</h2>
+        <p style={{ color: '#8892a4', margin: '0 0 24px', fontSize: '14px' }}>Enter the demo password to continue</p>
+        <input
+          type="password"
+          value={password}
+          onChange={e => { setPassword(e.target.value); setError(false); }}
+          placeholder="Password"
+          autoFocus
+          style={{
+            width: '100%', padding: '12px 16px', borderRadius: '10px', fontSize: '14px',
+            border: `1.5px solid ${error ? '#ff6b6b' : '#2a3040'}`,
+            background: '#151a26', color: '#fff', outline: 'none', boxSizing: 'border-box',
+            marginBottom: '12px',
+          }}
+        />
+        {error && <p style={{ color: '#ff6b6b', fontSize: '13px', margin: '0 0 12px' }}>Incorrect password</p>}
+        <button type="submit" style={{
+          width: '100%', padding: '12px', border: 'none', borderRadius: '10px',
+          background: 'linear-gradient(135deg, #00D4BB, #00E5CC)', color: '#fff',
+          fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+        }}>
+          Enter
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function Sparkline({ data, color = '#00D4BB', forecast, width = 60, height = 24 }) {
   if (!data || data.length < 2) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const points = data.map((v, i) => `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * height}`).join(' ');
   const splitIdx = forecast ? Math.floor(data.length * 0.5) : data.length;
   const solidPoints = data.slice(0, splitIdx + 1).map((v, i) => `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * height}`).join(' ');
   const dashedPoints = data.slice(splitIdx).map((v, i) => `${((i + splitIdx) / (data.length - 1)) * width},${height - ((v - min) / range) * height}`).join(' ');
@@ -127,7 +186,7 @@ const NICKELODEON_CONFIG = {
   additionalInfo: 'Focus on Nickelodeon-licensed products including PAW Patrol, SpongeBob, and Teenage Mutant Ninja Turtles.',
 };
 
-export default function KidSayDemo() {
+function KidSayDemo() {
   const [messages, setMessages] = useState([
     { role: 'assistant', text: "Hi! I'm your AI analytics assistant. Ask me about toy and snack trends!", displayText: "Hi! I'm your AI analytics assistant. Ask me about toy and snack trends!", streaming: false }
   ]);
@@ -162,6 +221,7 @@ export default function KidSayDemo() {
   const personalizedAlerts = allPersonalizedAlerts ? allPersonalizedAlerts.slice(0, 3) : null;
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [alertDetail, setAlertDetail] = useState(null);
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
   const [modelDetailsOpen, setModelDetailsOpen] = useState(false);
 
 
@@ -366,22 +426,34 @@ export default function KidSayDemo() {
                   <div style={{ fontSize: '13px', fontWeight: '700', color: t.textSub }}>AGENT ACTIVITY</div>
                   <div style={{ fontSize: '10px', fontWeight: '600', color: t.textSub, marginLeft: 'auto', opacity: 0.6 }}>THIS WEEK</div>
                 </div>
-                {activities.slice(0, 10).map((a) => (
-                  <div key={a.id} style={{
-                    fontSize: '11px', lineHeight: '1.4', marginBottom: '6px',
-                    display: 'flex', gap: '8px', alignItems: 'flex-start',
-                  }}>
-                    <span style={{ fontSize: '9px', fontWeight: '700', color: t.textSub, opacity: 0.5, minWidth: '24px', flexShrink: 0, paddingTop: '1px' }}>{a.day}</span>
-                    <span style={{
-                      flex: 1, paddingLeft: '8px',
-                      borderLeft: `2px solid ${a.type === 'anomaly' ? (t.warn?.border || '#d97706') : a.type === 'trend' ? '#10b981' : t.inputBorder}`,
-                      color: a.type === 'anomaly' ? (t.warn?.title || '#fbbf24') : a.type === 'trend' ? '#10b981' : t.textSub,
-                      fontWeight: a.type === 'scan' ? '400' : '600',
-                    }}>
-                      {a.text}
-                    </span>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ maxHeight: '140px', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {activities.map((a) => (
+                      <div key={a.id} style={{
+                        fontSize: '11px', lineHeight: '1.4',
+                        display: 'flex', gap: '8px', alignItems: 'flex-start',
+                      }}>
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: t.textSub, opacity: 0.5, minWidth: '24px', flexShrink: 0, paddingTop: '1px' }}>{a.day}</span>
+                        <span style={{
+                          flex: 1, paddingLeft: '8px',
+                          borderLeft: `2px solid ${a.type === 'anomaly' ? (t.warn?.border || '#d97706') : a.type === 'trend' ? '#10b981' : t.inputBorder}`,
+                          color: a.type === 'anomaly' ? (t.warn?.title || '#fbbf24') : a.type === 'trend' ? '#10b981' : t.textSub,
+                          fontWeight: a.type === 'scan' ? '400' : '600',
+                        }}>
+                          {a.text}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                  {activities.length > 5 && (
+                    <>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: `linear-gradient(transparent, ${t.card})`, pointerEvents: 'none' }} />
+                      <button onClick={() => setActivityModalOpen(true)} style={{ display: 'block', width: '100%', marginTop: '8px', padding: '6px', background: 'none', border: 'none', fontSize: '11px', color: '#00D4BB', cursor: 'pointer', fontWeight: '600', textAlign: 'center' }}>
+                        View all activity ({activities.length})
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
@@ -484,38 +556,48 @@ export default function KidSayDemo() {
             )}
 
             {/* Agent Activity Feed */}
-            <div style={{ background: t.card, borderRadius: '16px', padding: '16px', boxShadow: t.shadow, transition: tr, maxHeight: '220px', overflowY: 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ background: t.card, borderRadius: '16px', padding: '16px', boxShadow: t.shadow, transition: tr }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: t.textSub, textTransform: 'uppercase', letterSpacing: '0.05em' }}>AGENT ACTIVITY</div>
-                {agentActive && <div style={{ fontSize: '10px', fontWeight: '600', color: t.textSub, marginLeft: 'auto', opacity: 0.6 }}>THIS WEEK</div>}
+                {agentActive && <div style={{ fontSize: '10px', fontWeight: '600', color: t.textSub, opacity: 0.6 }}>THIS WEEK</div>}
               </div>
               {activities.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {activities.map((a) => (
-                    <div key={a.id} className="activity-entry" style={{
-                      fontSize: '11px', lineHeight: '1.4',
-                      display: 'flex', gap: '8px', alignItems: 'flex-start',
-                    }}>
-                      <span style={{ fontSize: '9px', fontWeight: '700', color: t.textSub, opacity: 0.5, minWidth: '24px', flexShrink: 0, paddingTop: '1px' }}>{a.day}</span>
-                      <span style={{
-                        flex: 1, paddingLeft: '8px',
-                        borderLeft: `2px solid ${
-                          a.type === 'anomaly' ? (t.warn?.border || '#d97706') :
-                          a.type === 'trend' ? '#10b981' :
-                          a.type === 'complete' ? '#00D4BB' :
-                          t.inputBorder
-                        }`,
-                        color: a.type === 'anomaly' ? (t.warn?.title || '#fbbf24') :
-                               a.type === 'trend' ? '#10b981' :
-                               a.type === 'complete' ? '#00D4BB' :
-                               t.textSub,
-                        fontWeight: a.type === 'scan' ? '400' : '600',
-                        opacity: a.type === 'scan' ? 0.7 : 1,
+                <div style={{ position: 'relative' }}>
+                  <div style={{ maxHeight: '160px', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {activities.map((a) => (
+                      <div key={a.id} className="activity-entry" style={{
+                        fontSize: '11px', lineHeight: '1.4',
+                        display: 'flex', gap: '8px', alignItems: 'flex-start',
                       }}>
-                        {a.text}
-                      </span>
-                    </div>
-                  ))}
+                        <span style={{ fontSize: '9px', fontWeight: '700', color: t.textSub, opacity: 0.5, minWidth: '24px', flexShrink: 0, paddingTop: '1px' }}>{a.day}</span>
+                        <span style={{
+                          flex: 1, paddingLeft: '8px',
+                          borderLeft: `2px solid ${
+                            a.type === 'anomaly' ? (t.warn?.border || '#d97706') :
+                            a.type === 'trend' ? '#10b981' :
+                            a.type === 'complete' ? '#00D4BB' :
+                            t.inputBorder
+                          }`,
+                          color: a.type === 'anomaly' ? (t.warn?.title || '#fbbf24') :
+                                 a.type === 'trend' ? '#10b981' :
+                                 a.type === 'complete' ? '#00D4BB' :
+                                 t.textSub,
+                          fontWeight: a.type === 'scan' ? '400' : '600',
+                          opacity: a.type === 'scan' ? 0.7 : 1,
+                        }}>
+                          {a.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {activities.length > 5 && (
+                    <>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: `linear-gradient(transparent, ${t.card})`, pointerEvents: 'none' }} />
+                      <button onClick={() => setActivityModalOpen(true)} style={{ display: 'block', width: '100%', marginTop: '8px', padding: '6px', background: 'none', border: 'none', fontSize: '11px', color: '#00D4BB', cursor: 'pointer', fontWeight: '600', textAlign: 'center' }}>
+                        View all activity ({activities.length})
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div style={{ fontSize: '12px', color: t.textSub, opacity: 0.5, textAlign: 'center', padding: '16px 0' }}>
@@ -885,6 +967,50 @@ export default function KidSayDemo() {
       })()}
 
       {/* Alerts Modal */}
+      {activityModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div onClick={() => setActivityModalOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
+          <div style={{ position: 'relative', zIndex: 1, background: t.card, borderRadius: '20px', width: '100%', maxWidth: '560px', maxHeight: '80vh', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '20px 24px 0', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '700', color: t.text, margin: 0 }}>Agent Activity — This Week</h2>
+                <button onClick={() => setActivityModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '20px', color: t.textSub, cursor: 'pointer', padding: '4px 8px' }}>✕</button>
+              </div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {activities.map((a) => (
+                  <div key={a.id} style={{
+                    fontSize: '13px', lineHeight: '1.5',
+                    display: 'flex', gap: '10px', alignItems: 'flex-start',
+                  }}>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: t.textSub, opacity: 0.5, minWidth: '28px', flexShrink: 0, paddingTop: '3px' }}>{a.day}</span>
+                    <span style={{
+                      flex: 1, paddingLeft: '10px', padding: '8px 12px 8px 10px',
+                      borderLeft: `2px solid ${
+                        a.type === 'anomaly' ? (t.warn?.border || '#d97706') :
+                        a.type === 'trend' ? '#10b981' :
+                        a.type === 'complete' ? '#00D4BB' :
+                        t.inputBorder
+                      }`,
+                      color: a.type === 'anomaly' ? (t.warn?.title || '#fbbf24') :
+                             a.type === 'trend' ? '#10b981' :
+                             a.type === 'complete' ? '#00D4BB' :
+                             t.textSub,
+                      fontWeight: a.type === 'scan' ? '400' : '600',
+                      opacity: a.type === 'scan' ? 0.7 : 1,
+                      background: t.suggestBg, borderRadius: '0 8px 8px 0',
+                    }}>
+                      {a.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {alertsModalOpen && (() => {
         const allAlerts = allPersonalizedAlerts || [
           { severity: 'warn', icon: '⚠️', title: 'Anomaly Detected', body: 'LEGO saw unexpected 35% drop in West Coast', time: 'Just now' },
@@ -912,7 +1038,7 @@ export default function KidSayDemo() {
                   const { severity, icon, title, body, time, spark } = alert;
                   const s = t[severity === 'warn' ? 'warn' : severity === 'up' ? 'up' : 'new'];
                   return (
-                    <div key={`alert-${i}`} onClick={() => { if (alert.chartData) { setAlertsModalOpen(false); { setAlertDetail(alert); setModelDetailsOpen(false); }; } }} style={{ padding: '12px', background: s.bg, borderRadius: '10px', borderLeft: `3px solid ${s.border}`, marginBottom: '8px', transition: tr, cursor: alert.chartData ? 'pointer' : 'default' }}>
+                    <div key={`alert-${i}`} onClick={() => { if (alert.chartData) { setAlertsModalOpen(false); setAlertDetail(alert); setModelDetailsOpen(false); } }} style={{ padding: '12px', background: s.bg, borderRadius: '10px', borderLeft: `3px solid ${s.border}`, marginBottom: '8px', transition: tr, cursor: alert.chartData ? 'pointer' : 'default' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '12px', fontWeight: '600', color: s.title }}>{icon} {title}</div>
@@ -935,7 +1061,7 @@ export default function KidSayDemo() {
                       const { icon, title, body, spark } = alert;
                       const s = t.up;
                       return (
-                        <div key={`forecast-${i}`} onClick={() => { if (alert.chartData) { setAlertsModalOpen(false); { setAlertDetail(alert); setModelDetailsOpen(false); }; } }} style={{ padding: '12px', background: s.bg, borderRadius: '10px', borderLeft: `3px solid ${s.border}`, marginBottom: '8px', transition: tr, cursor: alert.chartData ? 'pointer' : 'default' }}>
+                        <div key={`forecast-${i}`} onClick={() => { if (alert.chartData) { setAlertsModalOpen(false); setAlertDetail(alert); setModelDetailsOpen(false); } }} style={{ padding: '12px', background: s.bg, borderRadius: '10px', borderLeft: `3px solid ${s.border}`, marginBottom: '8px', transition: tr, cursor: alert.chartData ? 'pointer' : 'default' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: '12px', fontWeight: '600', color: s.title }}>{icon} {title}</div>
@@ -964,5 +1090,13 @@ export default function KidSayDemo() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <PasswordGate>
+      <KidSayDemo />
+    </PasswordGate>
   );
 }
